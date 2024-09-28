@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id          String     @id @default(uuid())
+  phoneNumber String     @unique
+  Calls       Call[]
+  Playlists   Playlist[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Call {
+  id           String @id @default(uuid())
+  retellCallId String @unique
+
+  callObject Json?
+  transcript Json?
+
+  recordingUrl String?
+
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  userId    String
+  User      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Playlist Playlist?
+}
+
+model Playlist {
+  id        String   @id @default(uuid())
+  userId    String
+  User      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  url      String
+  metadata Json?
+
+  callId String @unique
+  Call   Call   @relation(fields: [callId], references: [id])
+}
