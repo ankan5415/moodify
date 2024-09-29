@@ -38,7 +38,10 @@ model Call {
 }
 
 model Playlist {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
+  spotifyId String @unique
+  name      String
+
   userId    String
   User      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())

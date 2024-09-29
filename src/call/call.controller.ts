@@ -12,7 +12,6 @@ export class CallController {
   @Post('event')
   async processCall(@Body() body: RetellWebhookDto) {
     const { event, call } = body;
-    this.logger.log({ event, call });
 
     if (call.call_type === 'web_call') return; // no-op for web calls
 

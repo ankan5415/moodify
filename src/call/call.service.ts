@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import Retell from 'retell-sdk';
+import { PlaylistService } from '@src/playlist/playlist.service';
 
 @Injectable()
 export class CallService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private playlistService: PlaylistService,
+  ) {}
 
   async handleCallStarted(data: Retell.Call.PhoneCallResponse) {
     const userNumber =
@@ -54,7 +58,7 @@ export class CallService {
     });
 
     // Call playlistService to generate playlist
-    // await this.playlistService.generatePlaylist(updatedCall.id);
+    await this.playlistService.generatePlaylist(updatedCall.id);
   }
 
   private formatCallObject(data: any) {
