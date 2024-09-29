@@ -14,7 +14,6 @@ export class SpotifyService {
       redirectUri: process.env.SPOTIFY_REDIRECT_URI,
     });
 
-    // Set access token (you'll need to implement token refresh logic)
     this.client.setAccessToken(process.env.SPOTIFY_ACCESS_TOKEN);
   }
 
@@ -49,22 +48,28 @@ export class SpotifyService {
     }
   }
 
-  async getRecommendations(params: GeneratePlaylistDto): Promise<any> {
+  async getRecommendations(params: any): Promise<any> {
     try {
-      const response = await this.client.getRecommendations(params);
+      const { playlistName, ...options } = params;
+      console.log('Options', options);
+      const response = await this.client.getRecommendations({
+        ...options,
+        market: 'US',
+      });
       this.logger.log(`Got ${response.body.tracks.length} recommendations`);
       return response.body.tracks;
     } catch (error) {
-      this.logger.error(`Failed to get recommendations: ${error.message}`);
-      throw new Error(`Failed to get recommendations: ${error.message}`);
+      console.log(error);
+      this.logger.error(
+        `Failed to get recommendations: ${JSON.stringify(error.message)}`,
+      );
+      throw new Error(
+        `Failed to get recommendations: ${JSON.stringify(error.message)}`,
+      );
     }
   }
 
-  async createPlaylist(
-    name: string,
-    description?: string,
-    isPublic = true,
-  ): Promise<any> {
+  async createPlaylist(name: string, description?: string, isPublic = true) {
     try {
       const response = await this.client.createPlaylist(name, {
         public: isPublic,
@@ -105,16 +110,18 @@ export class SpotifyService {
         return null;
       }
     } catch (error) {
-      this.logger.error(`Failed to search for artist: ${error.message}`);
-      throw new Error(`Failed to search for artist: ${error.message}`);
+      this.logger.error(
+        `Failed to search for artist: ${JSON.stringify(error.message)}`,
+      );
+      throw new Error(
+        `Failed to search for artist: ${JSON.stringify(error.message)}`,
+      );
     }
   }
 
-  async getSong(songName: string, artistName?: string): Promise<string | null> {
+  async getSong(songName: string): Promise<string | null> {
     try {
-      const query = artistName
-        ? `track:${songName} artist:${artistName}`
-        : songName;
+      const query = `track:${songName}`;
       const response = await this.client.searchTracks(query, { limit: 1 });
       if (response.body.tracks && response.body.tracks.items.length > 0) {
         const trackId = response.body.tracks.items[0].id;

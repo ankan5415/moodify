@@ -6,6 +6,7 @@ import { LlmService } from '@src/llm/llm.service';
 
 import { z } from 'zod';
 import { extractFeaturesPrompt } from './playlist.prompt';
+import { SmsService } from '@src/sms/sms.service';
 
 export const GeneratePlaylistTool = {
   name: 'generatePlaylist',
@@ -24,6 +25,7 @@ export class PlaylistService {
     private readonly spotifyService: SpotifyService,
     private readonly prismaService: PrismaService,
     private readonly llmService: LlmService,
+    private readonly smsService: SmsService,
   ) {}
 
   async generatePlaylist(callId: string) {
@@ -33,6 +35,8 @@ export class PlaylistService {
           id: callId,
         },
       });
+
+      console.log(call.transcript);
 
       this.logger.log('Attempting to get seed tracks');
       const { arguments: toolArgs }: { arguments: GeneratePlaylistToolArgs } =
@@ -49,13 +53,15 @@ export class PlaylistService {
       this.logger.log({ toolArgs });
 
       const seedTrackIds = await Promise.all(
-        (toolArgs.seed_tracks || []).map(async (trackName) => {
+        (toolArgs?.seed_tracks || []).map(async (trackName) => {
+          console.log(trackName);
           return await this.spotifyService.getSong(trackName);
         }),
       );
 
       const seedArtistIds = await Promise.all(
-        (toolArgs.seed_artists || []).map(async (artistName) => {
+        (toolArgs?.seed_artists || []).map(async (artistName) => {
+          console.log(artistName);
           return await this.spotifyService.getArtist(artistName);
         }),
       );
@@ -69,8 +75,10 @@ export class PlaylistService {
 
       const playlistArgs = {
         ...toolArgs,
-        seed_tracks: validSeedTrackIds,
-        seed_artists: validSeedArtistIds,
+        seed_tracks:
+          validSeedTrackIds.length > 0 ? validSeedTrackIds.join(',') : null,
+        seed_artists:
+          validSeedArtistIds.length > 0 ? validSeedArtistIds.join(',') : null,
       };
 
       // Get recommendations using all possible parameters
@@ -78,23 +86,37 @@ export class PlaylistService {
         await this.spotifyService.getRecommendations(playlistArgs);
 
       // Create a new playlist
-      const playlist = await this.spotifyService.createPlaylist(
+      const playlistResponse = await this.spotifyService.createPlaylist(
         playlistArgs.playlistName,
       );
 
+      console.log(recommendations);
+
       // Add recommended tracks to the playlist
       const trackUris = recommendations.map((track) => track.uri);
-      await this.spotifyService.addTracksToPlaylist(playlist.id, trackUris);
+      await this.spotifyService.addTracksToPlaylist(
+        playlistResponse.id,
+        trackUris,
+      );
 
-      await this.prismaService.playlist.create({
+      const playlist = await this.prismaService.playlist.create({
         data: {
           name: playlistArgs.playlistName,
-          url: playlist.uri,
-          spotifyId: playlist.id,
+          url: playlistResponse.external_urls.spotify,
+          spotifyId: playlistResponse.id,
+          metadata: JSON.parse(JSON.stringify(playlistResponse)),
           callId,
           userId: call.userId,
         },
+        include: {
+          User: true,
+        },
       });
+
+      await this.smsService.sendSMS(
+        playlist.User.phoneNumber,
+        `Your playlist has been created! Check it out here: ${playlist.url}`,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to create playlist with recommendations: ${error.message}`,

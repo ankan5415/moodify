@@ -1,6 +1,6 @@
 export function extractFeaturesPrompt(transcript: string): string {
   return `
-Please analyze the following conversation transcript between **Moodify** and a user. Moodify is an AI-powered music companion dedicated to creating the perfect playlist for users based on their mood and daily activities.
+You will be given a conversation transcript between Moodify and a user looking to find the right music to fit their needs. Moodify is an AI-powered music companion dedicated to creating the perfect playlist for users based on their mood and daily activities. You must analyze the following conversation transcript between **Moodify** and a user. There is a possibility that the transcript will have spelling mistakes relating to requested artist names and track titles. Regardless, you should attempt to analyze everything and extract the exact features of what the user is trying to convey and looking for. 
 
 **Conversation Transcript:**
 
@@ -13,7 +13,7 @@ Based on the conversation, extract the necessary information to fill in the foll
 3. **market**: An ISO 3166-1 alpha-2 country code to filter recommendations by market.
 4. **seed_artists**: A list of artist names to use as seeds for recommendations (Max: 5).
 5. **seed_genres**: A list of genres to use as seeds for recommendations (Max: 5).
-6. **seed_tracks**: A list of track names to use as seeds for recommendations (Max: 5).
+6. **seed_tracks**: A list of track names to use as seeds for recommendations (Max: 5). 
 7. **Acoustic Features**: Provide "min", "max", and "target" values for the following features based on the user's preferences and mood:
    - **acousticness** (Range: 0.0 to 1.0)
    - **danceability** (Range: 0.0 to 1.0)
@@ -37,9 +37,9 @@ Provide your analysis **strictly** in the following JSON format without any addi
   "playlistName": "string",
   "limit": number,
   "market": "string",
-  "seed_artists": ["artist1", "artist2"],
-  "seed_genres": ["genre1", "genre2"],
-  "seed_tracks": ["track1", "track2"],
+  "seed_artists": ["artist1", "artist2",...],
+  "seed_genres": ["genre1", "genre2",...],
+  "seed_tracks": ["track1", "track2",...],
   "min_acousticness": 0.0,
   "max_acousticness": 1.0,
   "target_acousticness": 0.5,

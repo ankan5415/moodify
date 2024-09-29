@@ -1,7 +1,9 @@
-import { Controller, Post, Body, Logger } from '@nestjs/common';
+import { Controller, Post, Body, Logger, Get, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CallService } from './call.service';
 import { RetellWebhookDto } from './retell.dto';
+
+import { Response } from 'express';
 
 @Controller('call')
 @ApiTags('call')
@@ -10,7 +12,7 @@ export class CallController {
   constructor(private readonly callService: CallService) {}
 
   @Post('event')
-  async processCall(@Body() body: RetellWebhookDto) {
+  async processCall(@Body() body: RetellWebhookDto, @Res() res: Response) {
     const { event, call } = body;
 
     if (call.call_type === 'web_call') return; // no-op for web calls
@@ -18,16 +20,19 @@ export class CallController {
     switch (event) {
       case 'call_started':
         await this.callService.handleCallStarted(call);
+        res.status(200).send({ message: 'Call started' });
         break;
       case 'call_ended':
         await this.callService.handleCallEnded(call);
+        res.status(200).send({ message: 'Call ended' });
         break;
       case 'call_analyzed':
+        res.status(200).send({ message: 'Call analyzing started' });
         await this.callService.handleCallAnalyzed(call);
-        return { message: 'Call analyzed successfully' };
+        break;
       default:
+        res.status(200).send({ message: 'Call analyzed successfully' });
         this.logger.warn(`Received an unknown event: ${event}`);
     }
-    return { message: 'Event processed' };
   }
 }
